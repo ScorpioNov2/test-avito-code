@@ -16,6 +16,21 @@ export interface RoomMember {
 const ROOM_URL_PARAM = 'room';
 const ROOM_ID_PATTERN = /^[\w-]{4,64}$/;
 const MEMBER_COLORS = ['#6b3fa0', '#b4413a', '#1f7a5a', '#2563eb', '#b45309', '#0e7490', '#9d174d', '#4d5b0c'];
+const PAGE_SESSION_STORAGE_KEY = 'avito-code:page-session';
+
+/** Giữ ID của tab qua thao tác refresh để không đếm awareness cũ và mới thành hai người. */
+function getPageSessionId(): string {
+  try {
+    const existing = window.sessionStorage.getItem(PAGE_SESSION_STORAGE_KEY);
+    if (existing) return existing;
+    const id = crypto.randomUUID();
+    window.sessionStorage.setItem(PAGE_SESSION_STORAGE_KEY, id);
+    return id;
+  } catch {
+    // Một số chế độ riêng tư có thể chặn sessionStorage; app vẫn hoạt động, chỉ không gộp được lần refresh đó.
+    return crypto.randomUUID();
+  }
+}
 
 // Signaling server tuỳ chỉnh (xem README). Để trống = dùng server mặc định của y-webrtc.
 const customSignalingUrls: string[] = ((import.meta.env.VITE_SIGNALING_URLS as string | undefined) ?? '')
@@ -44,6 +59,7 @@ export class CollaborationSession {
     this.awareness.setLocalStateField('user', {
       name: displayName,
       color: MEMBER_COLORS[this.awareness.clientID % MEMBER_COLORS.length],
+      pageSessionId: getPageSessionId(),
     });
   }
 
@@ -99,17 +115,26 @@ export class CollaborationSession {
   }
 
   setLocalName(name: string): void {
-    const currentUser = this.awareness.getLocalState()?.user as { name: string; color: string } | undefined;
+    const currentUser = this.awareness.getLocalState()?.user as { name: string; color: string; pageSessionId?: string } | undefined;
     this.awareness.setLocalStateField('user', { ...currentUser, name });
   }
 
   getMembers(): RoomMember[] {
-    const members: RoomMember[] = [];
+    const membersByPageSession = new Map<string, RoomMember>();
+    const legacyMembers: RoomMember[] = [];
     this.awareness.getStates().forEach((state, clientId) => {
-      const user = state.user as { name?: string; color?: string } | undefined;
+      const user = state.user as { name?: string; color?: string; pageSessionId?: string } | undefined;
       if (!user?.name) return;
-      members.push({ clientId, name: user.name, color: user.color ?? MEMBER_COLORS[0], isMe: clientId === this.awareness.clientID });
+      const member = { clientId, name: user.name, color: user.color ?? MEMBER_COLORS[0], isMe: clientId === this.awareness.clientID };
+      if (!user.pageSessionId) {
+        // Các tab đang chạy phiên bản cũ chưa có ID này; giữ nguyên cho đến khi awareness hết hạn.
+        legacyMembers.push(member);
+        return;
+      }
+      const existing = membersByPageSession.get(user.pageSessionId);
+      if (!existing || member.isMe || !existing.isMe) membersByPageSession.set(user.pageSessionId, member);
     });
+    const members = [...membersByPageSession.values(), ...legacyMembers];
     return members.sort((a, b) => Number(b.isMe) - Number(a.isMe) || a.clientId - b.clientId);
   }
 
