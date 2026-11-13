@@ -1,6 +1,6 @@
 import './styles.css';
 import './app/monacoEnvironment';
-import { CollaborationSession } from './app/collaborationSession';
+import { CollaborationSession, type ConnectionState } from './app/collaborationSession';
 import { queryDomElements } from './app/domElements';
 import { EditorController } from './app/editorController';
 import { applyChromeTheme } from './app/chromeTheme';
@@ -29,7 +29,7 @@ const toast = new ToastNotifier(dom.toastContainer);
 // Vào bằng link có Room ID => kết nối phòng. Không có => bắt đầu solo với code mẫu Python.
 const roomIdFromUrl = CollaborationSession.readRoomIdFromUrl();
 if (roomIdFromUrl) {
-  session.joinRoom(roomIdFromUrl);
+  void session.joinRoom(roomIdFromUrl);
 } else {
   seedNewDocument();
 }
@@ -107,6 +107,13 @@ const runController = new RunController({
   runButton: dom.runButton,
 });
 
+const CONNECTION_TOOLTIPS: Record<ConnectionState, string> = {
+  connected: 'Connected to other people in this room',
+  waiting: 'Waiting for others to connect. If someone is already here, your networks may be blocking direct connections.',
+  offline: 'Cannot reach the signaling server. Reconnecting…',
+};
+let connectionState: ConnectionState = 'waiting';
+
 function refreshRoomUi(): void {
   const roomId = session.currentRoomId;
   // Ở sảnh: Create room + Join room. Trong phòng: tên phòng + Copy link + QR + Leave.
@@ -115,9 +122,16 @@ function refreshRoomUi(): void {
   dom.roomInfo.hidden = roomId === null;
   if (roomId) {
     dom.roomNameText.textContent = `Room ${roomId}`;
-    dom.roomName.title = `Room ID: ${roomId}`;
+    dom.roomName.title = `Room ID: ${roomId}\n${CONNECTION_TOOLTIPS[connectionState]}`;
   }
 }
+
+// Chấm tròn cạnh tên phòng: xanh = đang nối với người khác, vàng = chưa có ai, đỏ = mất kết nối signaling.
+session.onConnectionChanged((state) => {
+  connectionState = state;
+  dom.roomName.dataset.connection = state;
+  refreshRoomUi();
+});
 
 async function copyRoomLink(): Promise<void> {
   const roomId = session.currentRoomId;
