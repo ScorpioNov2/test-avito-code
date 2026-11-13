@@ -37,7 +37,10 @@ body.is-resizing .editor-host { pointer-events: none; }
 /* ---------- Phòng: tên + nút copy link + nút QR + nút rời phòng ---------- */
 .room-info { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .room-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0; height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-weight: 600; white-space: nowrap; }
-.room-name::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--run); }
+.room-name::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--connection-color, #f59e0b); transition: background-color 0.2s; }
+.room-name[data-connection='connected'] { --connection-color: var(--run); }
+.room-name[data-connection='waiting'] { --connection-color: #f59e0b; }
+.room-name[data-connection='offline'] { --connection-color: var(--danger); }
 .room-name__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .button--leave { color: var(--danger); }
 .button--leave:hover { background: color-mix(in srgb, var(--danger) 14%, var(--bg)); }

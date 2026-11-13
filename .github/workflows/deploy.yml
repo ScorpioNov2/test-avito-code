@@ -47,6 +47,10 @@ jobs:
         env:
           # Đặt trong Settings > Secrets and variables > Actions > Variables
           VITE_SIGNALING_URLS: ${{ vars.VITE_SIGNALING_URLS }}
+          # Tuỳ chọn (xem README mục "TURN"): để trống thì app tự lấy TURN từ Worker signaling.
+          VITE_TURN_CREDENTIALS_URL: ${{ vars.VITE_TURN_CREDENTIALS_URL }}
+          VITE_ICE_SERVERS: ${{ vars.VITE_ICE_SERVERS }}
+          VITE_ICE_TRANSPORT_POLICY: ${{ vars.VITE_ICE_TRANSPORT_POLICY }}
 
       - uses: actions/upload-pages-artifact@v4
         with:

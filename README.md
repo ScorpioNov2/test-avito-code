@@ -85,7 +85,71 @@ Check Cloudflare's current free-plan limits for Durable Objects and WebSocket me
 runs it locally on `ws://127.0.0.1:8787`.
 
 Alternative without Cloudflare: `PORT=4444 npx y-webrtc-signaling` (installed with `y-webrtc`) on any Node host that
-terminates TLS, such as a small VPS. Peers behind strict NAT/firewalls may additionally need a TURN server.
+terminates TLS, such as a small VPS. Peers behind strict NAT/firewalls (including phones on mobile data) need a TURN server: see the next section.
+
+## TURN: rooms that work on WiFi but not on mobile data
+
+Symptom: two people in the same room see each other on the same WiFi, but as soon as one switches to mobile data (4G/5G) they stop
+seeing each other, even though the signaling server answers fine. Cause: WebRTC first tries a *direct* connection. STUN only helps
+two devices learn their public addresses, which is enough on the same network or behind friendly routers. Mobile carriers put phones
+behind CGNAT / symmetric NAT where the direct path is impossible, so traffic must go through a **TURN relay**. y-webrtc's underlying
+library (simple-peer) ships with STUN only, so before this fix there was no way to connect in that case.
+
+Now the app asks the signaling Worker for short-lived TURN credentials (`GET /turn-credentials`) before it joins a room, and falls
+back to STUN (with a console warning) if that fails. The Worker holds the secret, so no API token ever reaches the browser. It uses
+[Cloudflare Realtime TURN](https://developers.cloudflare.com/realtime/turn/) (at the time of writing 1,000 GB/month free, then $0.05/GB; check current pricing).
+
+Setup (once):
+
+1. Cloudflare Dashboard > **Realtime** > **TURN Server** > create a key. Copy the **Turn Token ID** and the **API token**.
+2. Put the Turn Token ID in `signaling/wrangler.toml` (`TURN_KEY_ID = "..."`) and store the API token as a secret:
+   ```bash
+   cd signaling
+   npx wrangler secret put TURN_API_TOKEN
+   npx wrangler deploy
+   ```
+3. Check it from a terminal (add the `Origin` header if you set `ALLOWED_ORIGINS`; the answer must list `turn:` / `turns:` URLs with a `username` and `credential`):
+   ```bash
+   curl -H "Origin: https://<user>.github.io" https://avito-code-signaling.<your-subdomain>.workers.dev/turn-credentials
+   ```
+4. Redeploy the site (push to `main`) so everyone gets the new version. Nothing else to configure: the app derives the URL from `VITE_SIGNALING_URLS`.
+
+Responses: `200` credentials, `501` TURN not configured (app uses STUN only), `502` Cloudflare API failed (app uses STUN only), `403` origin not allowed.
+
+**The dot next to the room name** tells you what is going on (hover for details):
+green = connected to other people, amber = nobody else connected yet, red = the signaling server is unreachable (it reconnects by itself).
+If you see amber while a friend says they are in the room, your networks cannot reach each other directly: check that TURN works.
+
+**Verify that TURN really works** (not just that it is configured): build/run with `VITE_ICE_TRANSPORT_POLICY=relay`. The browser is then
+*forbidden* from using a direct path, so two people can only connect if the relay works. It is slower and spends TURN bandwidth, so
+use it only for the test and remove it afterwards.
+
+**Reconnecting.** When a connection is lost (for example WiFi to mobile data, or the phone's browser comes back from the background),
+the signaling library reconnects automatically with backoff. The app does not restart the signaling provider just because the room
+temporarily has no connected peer; restarting it can create avoidable WebSocket churn.
+
+## Supabase signaling (alternative to Cloudflare)
+
+`supabase/functions/signaling/` is a WebSocket-compatible y-webrtc relay backed by Supabase Realtime Broadcast. Unlike a module-level
+in-memory socket map, Realtime can fan messages out even when browser connections are handled by different Edge Function instances.
+The app derives the TURN URL as `/functions/v1/signaling/ice-servers` and accepts the raw ICE server array returned by the function.
+
+Configure these Edge Function variables/secrets:
+
+- `XIRSYS_AUTH_TOKEN`: the Xirsys authorization string. Keep it in Function Secrets, never in Vite variables or committed source.
+- `ALLOWED_ORIGINS`: comma-separated website origins, for example `https://<user>.github.io,http://localhost:5173`.
+- `SUPABASE_URL` plus a server-side key: the function reads `SUPABASE_SECRET_KEYS` (`default`) or `SUPABASE_SECRET_KEY` /
+  `SUPABASE_SERVICE_ROLE_KEY`. These must remain server-side.
+
+Set the frontend's `VITE_SIGNALING_URLS` to
+`wss://<project-ref>.supabase.co/functions/v1/signaling`, then deploy the function with
+`supabase functions deploy signaling --no-verify-jwt` and rebuild the site. The WebSocket route uses room links as bearer access;
+an origin allowlist is not authentication for non-browser clients. Add JWT or room authorization before using private rooms.
+Each connected browser session also holds a Supabase Realtime subscription, so Realtime connection and broadcast limits apply.
+
+**Other TURN servers** (your own coturn, Metered...): set `VITE_ICE_SERVERS` to a JSON array such as
+`[{"urls":"turn:turn.example.com:3478","username":"user","credential":"pass"}]`. Those credentials end up in the page, so prefer the Worker
+route above for anything that matters.
 
 ## Keeping everyone's text identical
 
@@ -112,6 +176,7 @@ Add one: create `src/app/editorThemes/themes/<name>Theme.ts` with `export defaul
 ```
 scripts/fetch-wasm-assets.mjs      downloads + verifies toolchains
 signaling/                         Cloudflare Worker signaling server (separate package)
+supabase/functions/signaling/      Supabase Edge Function + Realtime Broadcast relay
 .github/workflows/deploy.yml       GitHub Pages deployment
 src/
   main.ts                          wires everything together

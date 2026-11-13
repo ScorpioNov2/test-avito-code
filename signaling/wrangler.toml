@@ -15,3 +15,9 @@ new_sqlite_classes = ["SignalingHub"]
 # Danh sách origin được phép kết nối, ngăn cách bằng dấu phẩy (để trống = cho phép tất cả).
 # Ví dụ: "https://<tên-github>.github.io,http://localhost:5173"
 ALLOWED_ORIGINS = ""
+
+# --- TURN: cần cho điện thoại dùng dữ liệu di động hoặc mạng chặt (xem README mục "TURN").
+# Điền "Turn Token ID" lấy từ Cloudflare Dashboard (Realtime > TURN Server). Đây KHÔNG phải bí mật.
+# API token thì LÀ bí mật: đặt bằng `npx wrangler secret put TURN_API_TOKEN`, đừng ghi vào file này.
+# Để trống thì /turn-credentials trả 501 và app chỉ dùng STUN.
+TURN_KEY_ID = ""
