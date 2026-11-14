@@ -1,6 +1,7 @@
 import { requireElement } from './domElements';
 import { getAllEditorThemes } from './editorThemes/editorThemeRegistry';
 import type { PreferenceStore } from './userPreferences';
+import { WasmCacheManager } from './wasmCacheManager';
 
 /** Popup Settings: tên hiển thị, theme, và bật/tắt nhãn tên trên con trỏ của người khác. */
 export class SettingsDialog {
@@ -9,6 +10,7 @@ export class SettingsDialog {
   private readonly themeSelect = requireElement<HTMLSelectElement>('settings-theme-select');
   private readonly showNamesInput = requireElement<HTMLInputElement>('settings-show-names-input');
   private readonly cancelButton = requireElement<HTMLButtonElement>('settings-cancel-button');
+  private readonly wasmCacheManager = new WasmCacheManager();
 
   constructor(
     private readonly dialog: HTMLDialogElement,
@@ -32,5 +34,6 @@ export class SettingsDialog {
     this.themeSelect.value = editorTheme;
     this.showNamesInput.checked = showRemoteNames;
     this.dialog.showModal();
+    void this.wasmCacheManager.refresh();
   }
 }

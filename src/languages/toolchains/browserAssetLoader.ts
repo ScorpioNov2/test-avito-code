@@ -2,7 +2,8 @@ import type { AssetLoader } from './types';
 
 /** Tăng số này khi bạn thay file trong public/wasm/ để trình duyệt tải lại thay vì dùng bản cache cũ. */
 const ASSET_CACHE_VERSION = 1;
-const CACHE_NAME = `avito-code-wasm-assets-v${ASSET_CACHE_VERSION}`;
+export const WASM_ASSET_CACHE_NAME_PREFIX = 'avito-code-wasm-assets-v';
+const CACHE_NAME = `${WASM_ASSET_CACHE_NAME_PREFIX}${ASSET_CACHE_VERSION}`;
 
 /** Tải file từ public/wasm/ và lưu vào Cache Storage (file hàng chục MB chỉ tải một lần). */
 export function createBrowserAssetLoader(): AssetLoader {
