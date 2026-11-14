@@ -94,6 +94,30 @@
           </span>
           <input id="settings-show-names-input" class="switch" type="checkbox" role="switch" />
         </label>
+        <section class="wasm-cache-panel" aria-labelledby="wasm-cache-title">
+          <div class="wasm-cache-panel__heading">
+            <h3 id="wasm-cache-title">WebAssembly cache</h3>
+            <button id="wasm-cache-refresh-button" class="button button--secondary wasm-cache-refresh" type="button">Refresh</button>
+          </div>
+          <p class="wasm-cache-panel__hint">Manage cached C/C++, Rust, and Java toolchains. Cleared files download again when needed. Python/Pyodide uses the browser’s HTTP cache and cannot be cleared here.</p>
+          <div class="wasm-cache-total">
+            <span>Managed cache total</span>
+            <strong id="wasm-cache-total">Calculating…</strong>
+          </div>
+          <div id="wasm-cache-bar" class="wasm-cache-bar" role="img" aria-label="WebAssembly cache by library"></div>
+          <div class="wasm-cache-origin">
+            <div class="wasm-cache-total">
+              <span>Site storage quota</span>
+              <span id="wasm-cache-origin-usage">Checking browser estimate…</span>
+            </div>
+            <div id="wasm-cache-origin-meter" class="wasm-cache-origin__meter" role="progressbar" aria-label="Site storage quota usage" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span id="wasm-cache-origin-meter-fill" class="wasm-cache-origin__fill"></span>
+            </div>
+            <p class="wasm-cache-panel__hint">Quota usage covers all data stored by this site, not only these toolchains.</p>
+          </div>
+          <div id="wasm-cache-libraries" class="wasm-cache-libraries"></div>
+          <p id="wasm-cache-status" class="wasm-cache-status" role="status" aria-live="polite"></p>
+        </section>
         <div class="dialog__actions">
           <button id="settings-cancel-button" class="button button--secondary" type="button">Cancel</button>
           <button class="button button--primary" type="submit">Save</button>
