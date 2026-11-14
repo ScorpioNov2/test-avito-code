@@ -94,35 +94,54 @@
           </span>
           <input id="settings-show-names-input" class="switch" type="checkbox" role="switch" />
         </label>
-        <section class="wasm-cache-panel" aria-labelledby="wasm-cache-title">
-          <div class="wasm-cache-panel__heading">
-            <h3 id="wasm-cache-title">WebAssembly cache</h3>
-            <button id="wasm-cache-refresh-button" class="button button--secondary wasm-cache-refresh" type="button">Refresh</button>
+        <section class="settings-cache-entry" aria-label="WebAssembly cache settings">
+          <div class="settings-cache-entry__copy">
+            <span class="settings-cache-entry__title">WebAssembly libraries</span>
+            <span class="settings-cache-entry__hint">View storage usage and manage downloaded toolchains.</span>
           </div>
-          <p class="wasm-cache-panel__hint">Manage cached C/C++, Rust, and Java toolchains. Cleared files download again when needed. Python/Pyodide uses the browser’s HTTP cache and cannot be cleared here.</p>
-          <div class="wasm-cache-total">
-            <span>Managed cache total</span>
-            <strong id="wasm-cache-total">Calculating…</strong>
-          </div>
-          <div id="wasm-cache-bar" class="wasm-cache-bar" role="img" aria-label="WebAssembly cache by library"></div>
-          <div class="wasm-cache-origin">
-            <div class="wasm-cache-total">
-              <span>Site storage quota</span>
-              <span id="wasm-cache-origin-usage">Checking browser estimate…</span>
-            </div>
-            <div id="wasm-cache-origin-meter" class="wasm-cache-origin__meter" role="progressbar" aria-label="Site storage quota usage" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-              <span id="wasm-cache-origin-meter-fill" class="wasm-cache-origin__fill"></span>
-            </div>
-            <p class="wasm-cache-panel__hint">Quota usage covers all data stored by this site, not only these toolchains.</p>
-          </div>
-          <div id="wasm-cache-libraries" class="wasm-cache-libraries"></div>
-          <p id="wasm-cache-status" class="wasm-cache-status" role="status" aria-live="polite"></p>
+          <button id="manage-wasm-cache-button" class="button button--secondary settings-cache-entry__button" type="button">Manage cache</button>
         </section>
         <div class="dialog__actions">
           <button id="settings-cancel-button" class="button button--secondary" type="button">Cancel</button>
           <button class="button button--primary" type="submit">Save</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="wasm-cache-dialog" class="dialog dialog--cache" aria-labelledby="wasm-cache-dialog-title">
+      <div class="wasm-cache-dialog__header">
+        <div>
+          <h2 id="wasm-cache-dialog-title">Manage WebAssembly cache</h2>
+          <p class="wasm-cache-panel__hint">Clear individual toolchains; cleared files download again when needed. Python/Pyodide uses the browser’s HTTP cache and cannot be cleared here.</p>
+        </div>
+        <button id="close-wasm-cache-dialog-button" class="button button--secondary wasm-cache-dialog__close" type="button" aria-label="Close cache manager">×</button>
+      </div>
+      <section class="wasm-cache-panel wasm-cache-panel--dialog" aria-labelledby="wasm-cache-usage-title">
+        <div class="wasm-cache-panel__heading">
+          <h3 id="wasm-cache-usage-title">Storage breakdown</h3>
+          <button id="wasm-cache-refresh-button" class="button button--secondary wasm-cache-refresh" type="button">Refresh</button>
+        </div>
+        <div class="wasm-cache-total">
+          <span>Managed cache total</span>
+          <strong id="wasm-cache-total">Calculating…</strong>
+        </div>
+        <div id="wasm-cache-bar" class="wasm-cache-bar" role="img" aria-label="WebAssembly cache by library"></div>
+        <div class="wasm-cache-origin">
+          <div class="wasm-cache-total">
+            <span>Site storage quota</span>
+            <span id="wasm-cache-origin-usage">Checking browser estimate…</span>
+          </div>
+          <div id="wasm-cache-origin-meter" class="wasm-cache-origin__meter" role="progressbar" aria-label="Site storage quota usage" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span id="wasm-cache-origin-meter-fill" class="wasm-cache-origin__fill"></span>
+          </div>
+          <p class="wasm-cache-panel__hint">Quota usage covers all data stored by this site, not only these toolchains.</p>
+        </div>
+        <div id="wasm-cache-libraries" class="wasm-cache-libraries"></div>
+        <p id="wasm-cache-status" class="wasm-cache-status" role="status" aria-live="polite"></p>
+      </section>
+      <div class="dialog__actions">
+        <button id="done-wasm-cache-dialog-button" class="button button--primary" type="button">Done</button>
+      </div>
     </dialog>
 
     <dialog id="qr-dialog" class="dialog dialog--flush">
