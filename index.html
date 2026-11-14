@@ -114,7 +114,9 @@
           <h2 id="wasm-cache-dialog-title">Manage WebAssembly cache</h2>
           <p class="wasm-cache-panel__hint">Clear individual toolchains; cleared files download again when needed. Python/Pyodide uses the browser’s HTTP cache and cannot be cleared here.</p>
         </div>
-        <button id="close-wasm-cache-dialog-button" class="button button--secondary wasm-cache-dialog__close" type="button" aria-label="Close cache manager">×</button>
+        <button id="close-wasm-cache-dialog-button" class="button button--secondary wasm-cache-dialog__close" type="button" aria-label="Close cache manager">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
       </div>
       <section class="wasm-cache-panel wasm-cache-panel--dialog" aria-labelledby="wasm-cache-usage-title">
         <div class="wasm-cache-panel__heading">
@@ -126,21 +128,21 @@
           <strong id="wasm-cache-total">Calculating…</strong>
         </div>
         <div id="wasm-cache-bar" class="wasm-cache-bar" role="img" aria-label="WebAssembly cache by library"></div>
-        <div class="wasm-cache-origin">
-          <div class="wasm-cache-total">
-            <span>Site storage quota</span>
-            <span id="wasm-cache-origin-usage">Checking browser estimate…</span>
-          </div>
-          <div id="wasm-cache-origin-meter" class="wasm-cache-origin__meter" role="progressbar" aria-label="Site storage quota usage" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-            <span id="wasm-cache-origin-meter-fill" class="wasm-cache-origin__fill"></span>
-          </div>
-          <p class="wasm-cache-panel__hint">Quota usage covers all data stored by this site, not only these toolchains.</p>
-        </div>
+        <p class="wasm-cache-panel__hint">This total includes only C/C++, Rust, and Java files managed by this app.</p>
         <div id="wasm-cache-libraries" class="wasm-cache-libraries"></div>
         <p id="wasm-cache-status" class="wasm-cache-status" role="status" aria-live="polite"></p>
       </section>
       <div class="dialog__actions">
         <button id="done-wasm-cache-dialog-button" class="button button--primary" type="button">Done</button>
+      </div>
+    </dialog>
+
+    <dialog id="wasm-cache-confirm-dialog" class="dialog dialog--confirm" aria-labelledby="wasm-cache-confirm-title" aria-describedby="wasm-cache-confirm-message">
+      <h2 id="wasm-cache-confirm-title">Clear library cache?</h2>
+      <p id="wasm-cache-confirm-message" class="wasm-cache-confirm__message"></p>
+      <div class="dialog__actions">
+        <button id="wasm-cache-confirm-cancel-button" class="button button--secondary" type="button">Cancel</button>
+        <button id="wasm-cache-confirm-clear-button" class="button button--danger" type="button">Clear cache</button>
       </div>
     </dialog>
 

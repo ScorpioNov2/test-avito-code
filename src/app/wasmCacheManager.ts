@@ -18,8 +18,6 @@ interface LibraryUsage extends LibraryDefinition {
 interface CacheSummary {
   libraries: LibraryUsage[];
   totalBytes: number;
-  originUsage?: number;
-  originQuota?: number;
 }
 
 const LIBRARIES: LibraryDefinition[] = [
@@ -84,16 +82,6 @@ async function readCacheSummary(): Promise<CacheSummary> {
     }
   }
 
-  let originUsage: number | undefined;
-  let originQuota: number | undefined;
-  try {
-    const estimate = await navigator.storage?.estimate();
-    originUsage = estimate?.usage;
-    originQuota = estimate?.quota;
-  } catch {
-    // Một số trình duyệt hoặc chế độ riêng tư không cung cấp quota.
-  }
-
   const libraries = LIBRARIES.map((library) => ({
     ...library,
     ...(usageByLibrary.get(library.id) ?? { bytes: 0, entries: 0 }),
@@ -101,8 +89,6 @@ async function readCacheSummary(): Promise<CacheSummary> {
   return {
     libraries,
     totalBytes: libraries.reduce((total, library) => total + library.bytes, 0),
-    originUsage,
-    originQuota,
   };
 }
 
@@ -132,22 +118,32 @@ export class WasmCacheManager {
   private readonly refreshButton = requireElement<HTMLButtonElement>('wasm-cache-refresh-button');
   private readonly totalElement = requireElement<HTMLElement>('wasm-cache-total');
   private readonly barElement = requireElement<HTMLElement>('wasm-cache-bar');
-  private readonly originUsageElement = requireElement<HTMLElement>('wasm-cache-origin-usage');
-  private readonly originMeter = requireElement<HTMLElement>('wasm-cache-origin-meter');
-  private readonly originMeterFill = requireElement<HTMLElement>('wasm-cache-origin-meter-fill');
   private readonly libraryList = requireElement<HTMLElement>('wasm-cache-libraries');
   private readonly statusElement = requireElement<HTMLElement>('wasm-cache-status');
+  private readonly confirmDialog = requireElement<HTMLDialogElement>('wasm-cache-confirm-dialog');
+  private readonly confirmMessage = requireElement<HTMLElement>('wasm-cache-confirm-message');
+  private readonly confirmCancelButton = requireElement<HTMLButtonElement>('wasm-cache-confirm-cancel-button');
+  private readonly confirmClearButton = requireElement<HTMLButtonElement>('wasm-cache-confirm-clear-button');
   private isBusy = false;
+  private pendingLibraryId: LibraryId | null = null;
 
   constructor() {
     this.refreshButton.addEventListener('click', () => void this.refresh());
+    this.confirmCancelButton.addEventListener('click', () => {
+      this.pendingLibraryId = null;
+      this.confirmDialog.close();
+    });
+    this.confirmDialog.addEventListener('cancel', () => {
+      this.pendingLibraryId = null;
+    });
+    this.confirmClearButton.addEventListener('click', () => this.confirmClearLibrary());
     this.libraryList.addEventListener('click', (event) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
       const button = target.closest<HTMLButtonElement>('button[data-library-id]');
       const libraryId = button?.dataset.libraryId;
       if (libraryId === 'clang' || libraryId === 'rust' || libraryId === 'java') {
-        void this.clearLibrary(libraryId);
+        this.requestClearConfirmation(libraryId);
       }
     });
   }
@@ -166,8 +162,6 @@ export class WasmCacheManager {
       this.totalElement.textContent = 'Unavailable';
       this.barElement.replaceChildren();
       this.libraryList.replaceChildren();
-      this.originUsageElement.textContent = 'Site storage estimate is unavailable.';
-      this.originMeterFill.style.width = '0%';
       this.statusElement.textContent = error instanceof Error ? error.message : 'Unable to read browser cache.';
     } finally {
       this.isBusy = false;
@@ -192,23 +186,7 @@ export class WasmCacheManager {
       `Managed WebAssembly cache: ${summary.libraries.map((library) => `${library.label} ${formatBytes(library.bytes)}`).join(', ')}`,
     );
 
-    this.renderOriginUsage(summary.originUsage, summary.originQuota);
     this.renderLibraries(summary);
-  }
-
-  private renderOriginUsage(usage?: number, quota?: number): void {
-    if (usage === undefined || quota === undefined || quota <= 0) {
-      this.originUsageElement.textContent = 'Site storage estimate is unavailable in this browser.';
-      this.originMeterFill.style.width = '0%';
-      this.originMeter.setAttribute('aria-valuenow', '0');
-      return;
-    }
-
-    const percent = Math.min(100, Math.round((usage / quota) * 100));
-    this.originUsageElement.textContent = `${formatBytes(usage)} of ${formatBytes(quota)} used by this site`;
-    this.originMeterFill.style.width = `${percent}%`;
-    this.originMeter.setAttribute('aria-valuenow', String(percent));
-    this.originMeter.setAttribute('aria-valuetext', `${percent}% of this site's storage quota`);
   }
 
   private renderLibraries(summary: CacheSummary): void {
@@ -249,11 +227,26 @@ export class WasmCacheManager {
     }
   }
 
+  private requestClearConfirmation(libraryId: LibraryId): void {
+    if (this.isBusy) return;
+    const library = LIBRARIES.find((item) => item.id === libraryId);
+    if (!library) return;
+    this.pendingLibraryId = libraryId;
+    this.confirmMessage.textContent = `Clear the cached ${library.label} files? They will be downloaded again when needed.`;
+    this.confirmDialog.showModal();
+  }
+
+  private confirmClearLibrary(): void {
+    const libraryId = this.pendingLibraryId;
+    this.pendingLibraryId = null;
+    this.confirmDialog.close();
+    if (libraryId) void this.clearLibrary(libraryId);
+  }
+
   private async clearLibrary(libraryId: LibraryId): Promise<void> {
     if (this.isBusy) return;
     const library = LIBRARIES.find((item) => item.id === libraryId);
-    if (!library || !window.confirm(`Clear the cached ${library.label} files? They will be downloaded again when needed.`)) return;
-
+    if (!library) return;
     this.isBusy = true;
     this.setControlsDisabled(true);
     this.statusElement.textContent = `Clearing ${library.label} cache…`;
