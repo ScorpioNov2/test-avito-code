@@ -11,6 +11,10 @@ export class SettingsDialog {
   private readonly showNamesInput = requireElement<HTMLInputElement>('settings-show-names-input');
   private readonly cancelButton = requireElement<HTMLButtonElement>('settings-cancel-button');
   private readonly wasmCacheManager = new WasmCacheManager();
+  private readonly manageWasmCacheButton = requireElement<HTMLButtonElement>('manage-wasm-cache-button');
+  private readonly wasmCacheDialog = requireElement<HTMLDialogElement>('wasm-cache-dialog');
+  private readonly closeWasmCacheButton = requireElement<HTMLButtonElement>('close-wasm-cache-dialog-button');
+  private readonly doneWasmCacheButton = requireElement<HTMLButtonElement>('done-wasm-cache-dialog-button');
 
   constructor(
     private readonly dialog: HTMLDialogElement,
@@ -18,6 +22,12 @@ export class SettingsDialog {
   ) {
     this.themeSelect.replaceChildren(...getAllEditorThemes().map((theme) => new Option(theme.label, theme.id)));
     this.cancelButton.addEventListener('click', () => this.dialog.close());
+    this.manageWasmCacheButton.addEventListener('click', () => {
+      this.wasmCacheDialog.showModal();
+      void this.wasmCacheManager.refresh();
+    });
+    this.closeWasmCacheButton.addEventListener('click', () => this.wasmCacheDialog.close());
+    this.doneWasmCacheButton.addEventListener('click', () => this.wasmCacheDialog.close());
     // form method="dialog" tự đóng popup sau khi submit.
     this.form.addEventListener('submit', () => {
       this.preferences.update({
@@ -34,6 +44,5 @@ export class SettingsDialog {
     this.themeSelect.value = editorTheme;
     this.showNamesInput.checked = showRemoteNames;
     this.dialog.showModal();
-    void this.wasmCacheManager.refresh();
   }
 }

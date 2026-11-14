@@ -47,7 +47,7 @@ blanked out before compiling because the engine always compiles `Main.java`.
 Stop (the red square) works for C/C++, Rust, Java and Python, by terminating the worker; the next run reloads the toolchain
 from the browser cache. Downloaded toolchains are kept in the browser's Cache Storage: if you replace files in
 `public/wasm/`, bump `ASSET_CACHE_VERSION` in `src/languages/toolchains/browserAssetLoader.ts`.
-Open **Settings > WebAssembly cache** to see the cached C/C++, Rust, and Java toolchain sizes and clear an individual
+Open **Settings > Manage cache** to see the cached C/C++, Rust, and Java toolchain sizes and clear an individual
 toolchain. The size bar reports cached response bytes; the separate browser quota meter includes all data stored for the site.
 Python/Pyodide is loaded through the browser's HTTP cache and cannot be selectively cleared by this app.
 
